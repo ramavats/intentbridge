@@ -1,0 +1,29 @@
+# Environment files  
+.env
+.env.local
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+.next/
+out/
+
+# Hardhat
+contracts/cache/
+contracts/artifacts/
+contracts/ignition/deployments/
+
+# Rust/Cargo
+pvm/pathfinder/target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
