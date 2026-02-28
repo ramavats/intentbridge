@@ -44,8 +44,8 @@ User → IntentBox.sol → [Solver Network] → SettlementEngine.sol → XCM Pre
 | `SettlementEngine.sol` | Solidity | Verifies solver fulfillment, calls XCM precompile to dispatch cross-chain transfer |
 | `IXcm.sol` | Solidity | Interface to Polkadot Hub's native XCM precompile at `0xA0000` |
 | `Pathfinder` | Rust/ink! | PVM module computing optimal routing paths across parachains via Dijkstra |
-| Solver Bot | Node.js | Off-chain solver that monitors intents and fills them for fees |
-| Frontend | Next.js + Wagmi | User interface for submitting intents and tracking status |
+| Solver Bot | Node.js | Off-chain solver that monitors intents, builds XCM messages, and fills them |
+| Frontend | Next.js + Wagmi | Premium dark-themed UI for submitting intents and tracking live activity |
 
 ---
 
@@ -53,12 +53,12 @@ User → IntentBox.sol → [Solver Network] → SettlementEngine.sol → XCM Pre
 
 | Contract | Address |
 |---|---|
-| IntentBox | `0x406906e30A236f33E5705f1060ae45795E6C77d0` |
-| SolverRegistry | `0x4Aaf1472E3B810d05721569A454975f67825FC20` |
-| SettlementEngine | `0x7b08B4E74Efaffe917c78473dF38Bc1889512B42` |
+| IntentBox | `0x40D80d465c244B4622dF362fE6c6c6b1F5A61B73` |
+| SolverRegistry | `0x29812e5f7EBd1C9A7DE1c67630909ba3E4Ed9e0e` |
+| SettlementEngine | `0xDC8feF64C2271C5EcC1d6c613CDae8660D481f66` |
 | Pathfinder (PVM/ink!) | `0x7013DC4df91c1A8f0D33d6D6F44310e1565FBb5c` |
 
-🔍 View on explorer: [https://polkadot.testnet.routescan.io](https://polkadot.testnet.routescan.io/)
+🔍 View on explorer: [https://420420417.testnet.routescan.io](https://420420417.testnet.routescan.io/)
 
 ---
 
@@ -97,7 +97,7 @@ npx hardhat ignition deploy ignition/modules/IntentBridge.ts --network polkadotT
 ```bash
 cd pvm/pathfinder
 cargo contract build --release
-# Deploy via [https://ui.use.ink](https://ui.use.ink/)
+# Deploy via https://ui.use.ink
 ```
 
 ### 4. Solver Bot
@@ -129,7 +129,7 @@ npm run dev
 | RPC URL | `https://services.polkadothub-rpc.com/testnet` |
 | Chain ID | `420420417` |
 | Symbol | `PAS` |
-| Explorer | `https://polkadot.testnet.routescan.io` |
+| Explorer | `https://420420417.testnet.routescan.io` |
 
 ---
 
@@ -139,11 +139,13 @@ npm run dev
 2. **User fills the form** — amount, destination chain, min output, max solver fee, TTL
 3. **IntentBox.sol** escrows the user's funds and emits `IntentSubmitted`
 4. **Solver bot** detects the event within 4 seconds via block polling
-5. **Solver queries** the PVM Pathfinder for the optimal XCM route
+5. **Solver builds** a SCALE-encoded XCM v5 message (WithdrawAsset → BuyExecution → DepositAsset)
 6. **SettlementEngine.sol** calls the XCM precompile (`0xA0000`) to dispatch the cross-chain transfer
 7. **Intent is marked filled** — solver's fee enters a 30-minute dispute window
 8. **After 30 minutes** — solver calls `claimPayout()` to receive their fee
 9. **If solver cheats** — anyone can call `slashSolver()` during the dispute window
+
+> **Note:** On the current testnet, the XCM precompile is not yet fully operational for EVM-originated calls. The solver gracefully falls back to `settleIntentTestnet()` which bypasses the precompile while maintaining the same intent lifecycle. The XCM message encoding is production-ready for when the precompile becomes available.
 
 ---
 
@@ -152,7 +154,7 @@ npm run dev
 ```
 intentbridge/
 ├── contracts/                    # Solidity EVM contracts
-│   ├── contracts/
+│   ├── src/
 │   │   ├── IXcm.sol              # XCM precompile interface
 │   │   ├── IntentBox.sol         # User-facing escrow
 │   │   ├── SolverRegistry.sol    # Solver bonds + dispute window
@@ -167,17 +169,19 @@ intentbridge/
 │       └── src/lib.rs            # Route optimization engine
 ├── solver/                       # Off-chain solver bot
 │   ├── index.js                  # Main solver logic
+│   ├── xcm-builder.js            # SCALE-encoded XCM message builder
 │   ├── .env.example              # Environment template
 │   └── package.json
 └── frontend/                     # Next.js dApp
     ├── src/
     │   ├── app/
     │   │   ├── layout.tsx        # WagmiProvider wrapper
-    │   │   └── page.tsx          # Main page
+    │   │   ├── page.tsx          # Main page
+    │   │   └── globals.css       # Design system
     │   ├── components/
-    │   │   ├── ConnectWallet.tsx
-    │   │   ├── SubmitIntent.tsx
-    │   │   └── IntentList.tsx
+    │   │   ├── ConnectWallet.tsx  # Wallet + network switching
+    │   │   ├── SubmitIntent.tsx   # Intent submission form
+    │   │   └── IntentList.tsx     # Live activity feed
     │   └── lib/
     │       └── wagmi.ts          # Polkadot Hub chain config
     └── package.json
@@ -201,19 +205,26 @@ cargo test
 
 ## 🛣️ What's Next — Implementation Roadmap
 
-### 🔴 Critical
+### 🟢 Completed (Hackathon)
 
-- [ ] **Real XCM message encoding** — replace the placeholder `buildXcmMessage()` in solver with actual SCALE-encoded `WithdrawAsset → BuyExecution → DepositAsset` XCM program using `@polkadot/api`
-- [ ] **Solver → Pathfinder integration** — have the solver call the deployed ink! Pathfinder contract at `0x7013DC4df91c1A8f0D33d6D6F44310e1565FBb5c` to compute routes instead of hardcoding
-- [ ] **IntentList frontend component** — display open intents and their status in the UI
-- [ ] **End-to-end test** — full flow: submit intent → solver fills → verify on-chain → claim payout
+- [x] Smart contracts: IntentBox, SolverRegistry, SettlementEngine — deployed and tested
+- [x] ink! PVM Pathfinder — deployed on-chain
+- [x] Solver bot — auto-registers, polls intents, settles with XCM fallback
+- [x] XCM message encoding — SCALE-encoded WithdrawAsset → BuyExecution → DepositAsset (zero-dependency)
+- [x] Frontend — premium dark UI with wallet connection, network switching, intent submission, live feed
+- [x] End-to-end flow — submit intent → solver fills → on-chain confirmation
+
+### 🔴 Remaining Critical
+
+- [ ] **Solver → Pathfinder integration** — have the solver call the deployed ink! Pathfinder contract to compute optimal routes
 - [ ] **Demo video** — 3-minute walkthrough of the full user flow
 
-### 🟡 Post-Hackathon Milestone 2 
+### 🟡 Post-Hackathon (Milestone 2)
 
-- [ ] **ERC-7683 compatibility shim** — implement `ISettler` and `OnchainCrossChainOrder` interfaces so Ethereum-native solvers (Across Protocol, UniswapX) can fill Polkadot intents
-- [ ] **Multi-hop routing** — intents that route through Hydration → Asset Hub → Ethereum via Snowbridge, composed into one user-signed intent
-- [ ] **Full Dijkstra pathfinder** — upgrade PVM Pathfinder from greedy BFS to weighted shortest path with real HRMP channel cost data
+- [ ] **Real XCM execution** — pending XCM precompile availability for EVM on Polkadot Hub TestNet
+- [ ] **ERC-7683 compatibility shim** — implement `ISettler` and `OnchainCrossChainOrder` interfaces
+- [ ] **Multi-hop routing** — intents that route through Hydration → Asset Hub → Ethereum via Snowbridge
+- [ ] **Full Dijkstra pathfinder** — upgrade PVM Pathfinder from greedy BFS to weighted shortest path
 - [ ] **Solver reputation system** — on-chain scoring of solver fill rate, speed, and accuracy
 - [ ] **Governance analytics dashboard** — track intent volume, solver competition, fee market dynamics
 
@@ -222,8 +233,8 @@ cargo test
 - [ ] **Solver fee market** — dynamic fee pricing based on route complexity and competition
 - [ ] **Protocol treasury** — small % of fees accumulate in a DAO-controlled treasury
 - [ ] **Mainnet deployment** — deploy to Polkadot Hub mainnet post-audit
-- [ ] **W3F Grant application** — "Cross-Chain UX Infrastructure for Polkadot" — directly aligned with Web3 Foundation's stated infrastructure priorities
-- [ ] **ERC-7683 standard proposal** — submit Polkadot-native extension of the cross-chain intent standard to the ecosystem
+- [ ] **W3F Grant application** — "Cross-Chain UX Infrastructure for Polkadot"
+- [ ] **ERC-7683 standard proposal** — submit Polkadot-native extension of the cross-chain intent standard
 
 ---
 

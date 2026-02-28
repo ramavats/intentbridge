@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { ethers } from 'ethers';
+import { buildSimpleTransfer, buildCrossChainTransfer, evmToAccountId32 } from './xcm-builder.js';
 
 // ── Provider using polling (no eth_newFilter needed) ──
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL, {
@@ -27,6 +28,7 @@ const REGISTRY_ABI = [
 ];
 
 const SETTLEMENT_ABI = [
+    "function settleIntent(bytes32 intentId, bytes calldata xcmMessage) external",
     "function settleIntentTestnet(bytes32 intentId) external"
 ];
 
@@ -40,8 +42,16 @@ const processedIntents = new Set();
 
 // ── XCM Message Builder ──
 function buildXcmMessage(intent) {
-    console.log(`   Building XCM route: Chain ${intent.fromChainId} → Chain ${intent.toChainId}`);
-    return "0x0408000100000700e40b5402000100010300c91f";  // MVP placeholder
+    const fromChain = Number(intent.fromChainId);
+    const toChain = Number(intent.toChainId);
+    const amount = BigInt(intent.amountIn);
+    const beneficiary = evmToAccountId32(intent.user);
+
+    console.log(`   Building XCM route: Chain ${fromChain} → Chain ${toChain}`);
+    console.log(`   Beneficiary (AccountId32): ${beneficiary.slice(0, 20)}...`);
+    console.log(`   Type: WithdrawAsset → BuyExecution → DepositAsset`);
+
+    return buildSimpleTransfer(amount, beneficiary);
 }
 
 // ── Register as Solver ──
@@ -81,10 +91,33 @@ async function fillIntent(intentId) {
     console.log(`   Amount: ${ethers.formatEther(intent.amountIn)} PAS`);
     console.log(`   Max fee: ${ethers.formatEther(intent.maxFee)} PAS`);
 
-    const xcmMessage = buildXcmMessage(intent);
-
+    // Build real XCM message
+    let xcmMessage;
     try {
-        const tx = await settlement.settleIntentTestnet(intentId);
+        xcmMessage = buildXcmMessage(intent);
+        console.log(`   XCM encoded: ${xcmMessage.slice(0, 40)}... (${(xcmMessage.length - 2) / 2} bytes)`);
+    } catch (err) {
+        console.error(`   ⚠️  XCM encoding failed: ${err.message}`);
+        xcmMessage = null;
+    }
+
+    // Try real XCM settlement first, fall back to testnet bypass
+    try {
+        let tx;
+        if (xcmMessage) {
+            try {
+                console.log(`   📡 Attempting XCM settlement...`);
+                tx = await settlement.settleIntent(intentId, xcmMessage);
+            } catch (xcmErr) {
+                console.log(`   ⚠️  XCM settlement failed: ${xcmErr.reason || xcmErr.message?.slice(0, 80)}`);
+                console.log(`   🔄 Falling back to testnet settlement...`);
+                tx = await settlement.settleIntentTestnet(intentId);
+            }
+        } else {
+            // XCM encoding failed, use testnet path
+            tx = await settlement.settleIntentTestnet(intentId);
+        }
+
         console.log(`   📡 TX sent: ${tx.hash}`);
         const receipt = await tx.wait();
         console.log(`   ✅ Filled! Block: ${receipt.blockNumber}`);
@@ -137,11 +170,12 @@ async function pollForIntents(fromBlock) {
 // ── Main ──
 async function main() {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("⚡ IntentBridge Solver Bot (polling mode)");
+    console.log("⚡ IntentBridge Solver Bot (XCM mode)");
     console.log(`   IntentBox:        ${process.env.INTENT_BOX_ADDRESS}`);
     console.log(`   SettlementEngine: ${process.env.SETTLEMENT_ADDRESS}`);
     console.log(`   SolverRegistry:   ${process.env.REGISTRY_ADDRESS}`);
     console.log(`   Pathfinder (PVM): 0x7013DC4df91c1A8f0D33d6D6F44310e1565FBb5c`);
+    console.log(`   Mode:             XCM → Testnet fallback`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     await ensureRegistered();

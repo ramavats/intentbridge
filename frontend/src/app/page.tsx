@@ -72,7 +72,7 @@ export default function Home() {
       <footer className="border-t border-border/40 py-6">
         <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-xs text-muted-foreground">
-            Built for Polkadot Hackathon 2025
+            Built for Polkadot Solidity Hackathon 2026
           </p>
           <div className="flex items-center gap-4">
             <a

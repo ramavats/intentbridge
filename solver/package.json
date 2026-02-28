@@ -6,6 +6,8 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@polkadot/types": "^16.5.4",
+    "@polkadot/util": "^14.0.1",
     "dotenv": "^16.0.0",
     "ethers": "^6.0.0"
   }
