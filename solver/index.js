@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { ethers } from 'ethers';
 import { buildSimpleTransfer, buildCrossChainTransfer, evmToAccountId32 } from './xcm-builder.js';
+import { queryRoute, formatRoute } from './pathfinder-client.js';
 
 // ── Provider using polling (no eth_newFilter needed) ──
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL, {
@@ -40,16 +41,21 @@ const settlement = new ethers.Contract(process.env.SETTLEMENT_ADDRESS, SETTLEMEN
 // ── Track processed intents to avoid double-filling ──
 const processedIntents = new Set();
 
-// ── XCM Message Builder ──
-function buildXcmMessage(intent) {
+// ── XCM Message Builder (with Pathfinder routing) ──
+async function buildXcmMessage(intent) {
     const fromChain = Number(intent.fromChainId);
     const toChain = Number(intent.toChainId);
     const amount = BigInt(intent.amountIn);
     const beneficiary = evmToAccountId32(intent.user);
 
-    console.log(`   Building XCM route: Chain ${fromChain} → Chain ${toChain}`);
+    // Query Pathfinder for optimal route
+    const route = await queryRoute(fromChain, toChain, provider);
+    console.log(`   🗺️  Route: ${formatRoute(route.path)}`);
+    console.log(`   📡 Source: ${route.source}`);
+    console.log(`   💰 Est. cost: ${Number(route.cost) / 1e10} PAS`);
+
     console.log(`   Beneficiary (AccountId32): ${beneficiary.slice(0, 20)}...`);
-    console.log(`   Type: WithdrawAsset → BuyExecution → DepositAsset`);
+    console.log(`   XCM: WithdrawAsset → BuyExecution → DepositAsset`);
 
     return buildSimpleTransfer(amount, beneficiary);
 }
@@ -94,7 +100,7 @@ async function fillIntent(intentId) {
     // Build real XCM message
     let xcmMessage;
     try {
-        xcmMessage = buildXcmMessage(intent);
+        xcmMessage = await buildXcmMessage(intent);
         console.log(`   XCM encoded: ${xcmMessage.slice(0, 40)}... (${(xcmMessage.length - 2) / 2} bytes)`);
     } catch (err) {
         console.error(`   ⚠️  XCM encoding failed: ${err.message}`);

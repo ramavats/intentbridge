@@ -28,7 +28,7 @@ const INTENT_BOX_ABI = [
 ];
 
 const CHAINS = [
-    { id: "2000", name: "Hydration", icon: "🌊" },
+    { id: "2034", name: "Hydration", icon: "🌊" },
     { id: "2004", name: "Moonbeam", icon: "🌙" },
     { id: "2006", name: "Astar", icon: "⭐" },
     { id: "2030", name: "Bifrost", icon: "🌈" },
@@ -39,7 +39,7 @@ export function SubmitIntent() {
     const [amount, setAmount] = useState("0.1");
     const [minOut, setMinOut] = useState("0.09");
     const [maxFee, setMaxFee] = useState("0.01");
-    const [toChain, setToChain] = useState("2000");
+    const [toChain, setToChain] = useState("2034");
 
     const { writeContract, data: hash, isPending, error } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } =
