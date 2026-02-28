@@ -9,6 +9,8 @@ IntentBridge lets users express a single signed intent ("I want to move X tokens
 [![Chain ID](https://img.shields.io/badge/Chain%20ID-420420417-E6007A)](https://420420417.testnet.routescan.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+![IntentBridge UI](assets/screenshot.png)
+
 ---
 
 ## 🧩 The Problem
