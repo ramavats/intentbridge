@@ -77,32 +77,32 @@ export function IntentList() {
     }, []);
 
     return (
-        <div className="glass-card rounded-2xl p-6 glow-pink animate-fade-in-up">
+        <div className="glass-card rounded-2xl p-4 sm:p-6 glow-accent animate-fade-in-up h-full flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <div className="flex items-center justify-between mb-4 sm:mb-5">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff6b35] to-[#FFECD1] flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E000C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                         </svg>
                     </div>
                     <div>
-                        <h2 className="text-base font-bold text-foreground">Recent Intents</h2>
-                        <p className="text-xs text-muted-foreground">Live activity feed</p>
+                        <h2 className="text-sm sm:text-base font-bold text-foreground">Recent Intents</h2>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Live activity feed</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 border border-success/20">
+                <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-success/10 border border-success/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-success status-pulse" />
-                    <span className="text-[10px] font-medium text-success uppercase tracking-wider">Live</span>
+                    <span className="text-[9px] sm:text-[10px] font-medium text-success uppercase tracking-wider">Live</span>
                 </div>
             </div>
 
-            {/* Loading State */}
+            {/* Loading */}
             {loading && (
                 <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
-                        <div key={i} className="rounded-xl p-4 bg-secondary/30">
+                        <div key={i} className="rounded-xl p-4 bg-muted/20">
                             <div className="shimmer h-3 w-32 rounded mb-3" />
                             <div className="shimmer h-3 w-48 rounded mb-2" />
                             <div className="shimmer h-3 w-24 rounded" />
@@ -111,56 +111,53 @@ export function IntentList() {
                 </div>
             )}
 
-            {/* Error State */}
+            {/* Error */}
             {error && (
                 <div className="p-4 rounded-xl bg-destructive/5 border border-destructive/20 text-center">
                     <p className="text-sm text-destructive">{error}</p>
                 </div>
             )}
 
-            {/* Empty State */}
+            {/* Empty */}
             {!loading && !error && intents.length === 0 && (
-                <div className="text-center py-10">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-muted/50 flex items-center justify-center">
+                <div className="text-center py-8 sm:py-10">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-muted/30 flex items-center justify-center">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
                             <circle cx="12" cy="12" r="10" />
                             <path d="M8 12h8M12 8v8" />
                         </svg>
                     </div>
                     <p className="text-sm text-muted-foreground">No intents yet</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                        Submit one to get started
-                    </p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Submit one to get started</p>
                 </div>
             )}
 
             {/* Intent Cards */}
             {!loading && intents.length > 0 && (
-                <div className="space-y-2.5">
+                <div className="space-y-2 sm:space-y-2.5 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pr-1">
                     {intents.map((intent, i) => (
                         <div
                             key={i}
-                            className="group relative rounded-xl p-4 border border-border/50
-                         bg-secondary/20 hover:bg-secondary/40 hover:border-purple-500/20
+                            className="group relative rounded-xl p-3 sm:p-4 border border-border/50
+                         bg-muted/15 hover:bg-muted/30 hover:border-[#FFECD1]/15
                          transition-all duration-300"
-                            style={{ animationDelay: `${i * 80}ms` }}
                         >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start justify-between gap-2 sm:gap-3">
                                 <div className="flex-1 min-w-0">
                                     {/* Intent ID */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20">
-                                            <span className="text-[10px] font-mono text-purple-400">
+                                    <div className="flex items-center gap-2 mb-1.5 sm:mb-2 flex-wrap">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FFECD1]/8 border border-[#FFECD1]/15">
+                                            <span className="text-[10px] font-mono text-[#FFECD1]/80">
                                                 {intent.intentId?.slice(0, 10)}…
                                             </span>
                                         </span>
                                         <span className="text-[10px] text-muted-foreground/60">
-                                            Block #{intent.blockNumber?.toString()}
+                                            #{intent.blockNumber?.toString()}
                                         </span>
                                     </div>
 
                                     {/* User */}
-                                    <p className="text-xs text-muted-foreground mb-1">
+                                    <p className="text-[10px] sm:text-xs text-muted-foreground">
                                         <span className="text-muted-foreground/60">From </span>
                                         <span className="font-mono">
                                             {intent.user?.slice(0, 8)}…{intent.user?.slice(-4)}
@@ -169,20 +166,18 @@ export function IntentList() {
                                 </div>
 
                                 {/* Amount */}
-                                <div className="text-right">
+                                <div className="text-right flex-shrink-0">
                                     <p className="text-sm font-bold text-foreground">
                                         {intent.amountIn
                                             ? parseFloat(formatEther(intent.amountIn)).toFixed(4)
                                             : "?"}
                                     </p>
-                                    <p className="text-[10px] text-muted-foreground font-medium">
-                                        PAS
-                                    </p>
+                                    <p className="text-[10px] text-muted-foreground font-medium">PAS</p>
                                 </div>
                             </div>
 
                             {/* Hover indicator */}
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 rounded-full bg-gradient-to-b from-purple-500 to-pink-500 group-hover:h-8 transition-all duration-300" />
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 rounded-full bg-gradient-to-b from-[#FFECD1] to-[#ff6b35] group-hover:h-8 transition-all duration-300" />
                         </div>
                     ))}
                 </div>
