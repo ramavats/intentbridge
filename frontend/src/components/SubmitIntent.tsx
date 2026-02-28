@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     useWriteContract,
     useWaitForTransactionReceipt,
@@ -67,6 +67,7 @@ const CHAINS = [
 ];
 
 export function SubmitIntent() {
+    const [mounted, setMounted] = useState(false);
     const { isConnected } = useAccount();
     const [amount, setAmount] = useState("0.1");
     const [minOut, setMinOut] = useState("0.09");
@@ -76,6 +77,7 @@ export function SubmitIntent() {
     const { writeContract, data: hash, isPending, error } = useWriteContract();
     const { isLoading: isConfirming, isSuccess } =
         useWaitForTransactionReceipt({ hash });
+    useEffect(() => setMounted(true), []);
 
     const handleSubmit = () => {
         writeContract({
@@ -94,7 +96,7 @@ export function SubmitIntent() {
         });
     };
 
-    if (!isConnected) {
+    if (!mounted || !isConnected) {
         return (
             <div className="glass-card rounded-2xl p-4 sm:p-6 glow-warm animate-fade-in-up h-full flex flex-col justify-center">
                 <div className="text-center py-6 sm:py-8">

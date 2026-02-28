@@ -2,10 +2,8 @@
 import { ConnectWallet } from "../components/ConnectWallet";
 import { SubmitIntent } from "../components/SubmitIntent";
 import { IntentList } from "../components/IntentList";
-import { useAccount } from "wagmi";
 
 export default function Home() {
-  const { isConnected } = useAccount();
 
   return (
     <div className="min-h-screen flex flex-col">
